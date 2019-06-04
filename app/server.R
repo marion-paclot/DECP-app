@@ -288,21 +288,12 @@ server = function(input, output, session) {
  
   ## Charger les données
   output$downloadData <- downloadHandler(
-    filename = function() {
-     'Donnees_DECP.xlsx'
-    },
+    filename = 'Donnees_DECP.xlsx',
     content = function(file) {
-      wb <- loadWorkbook(file, create = TRUE)
-      
-      createSheet(wb,"DECP")
-      writeWorksheet(wb,data = filtrerDonnees()$selection, sheet = "DECP")
-      setColumnWidth(wb, sheet = "DECP", column = 1:ncol(filtrerDonnees()$selection), width = -1)
-      
-      saveWorkbook(wb)
-    },
-    contentType="application/xlsx"
+      write_xlsx(filtrerDonnees()$selection, file)
+    }
   )
-  
+
 
 
 

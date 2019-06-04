@@ -8,9 +8,12 @@ ui <- dashboardPage(
     # titleWidth = 350,
     tags$li(
       class = "dropdown",
-      tags$a(href = "https://framaforms.org/donnees-essentielles-de-la-commande-publique-1559574654", "Donner mon avis"),
-      tags$a(href = "https://github.com/marion-paclot/DECP-app/", "Voir le code source"))
-
+      tags$a(href = "https://framaforms.org/donnees-essentielles-de-la-commande-publique-1559574654", 
+             "Donner mon avis")),
+    tags$li(
+      class = "dropdown",
+      tags$a(href = "https://github.com/marion-paclot/DECP-app/", 
+             "Voir le code source"))
   ),
   
   dashboardSidebar(
@@ -35,7 +38,7 @@ ui <- dashboardPage(
       # Acheteurs
       menuItem("Acheteurs", tabName = "tab_acheteur", icon = icon("institution"),
                selectizeInput("acheteur", "", multiple = TRUE,
-                              choices = NULL,
+                              choices = listeAcheteurs,
                               options = list(placeholder = 'Tous les acheteurs')
                )
       ),
@@ -43,7 +46,7 @@ ui <- dashboardPage(
       # Fournisseurs
       menuItem("Titulaires", tabName = "tab_titulaire", icon = icon("truck"),
                selectizeInput("titulaire", "", multiple = TRUE,
-                              choices = NULL,
+                              choices = listeTitulaires,
                               options = list(placeholder = 'Tous les titulaires')
                )
       ),

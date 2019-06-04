@@ -14,7 +14,7 @@ library(magrittr)
 
 library(pool)
 library(RPostgreSQL)
-
+library(writexl)
 
 options(shiny.sanitize.errors = FALSE)
 options(digits = 4, scipen=999)
