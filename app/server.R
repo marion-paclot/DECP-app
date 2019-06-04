@@ -183,8 +183,7 @@ server = function(input, output, session) {
     colnames(selection) = gsub('lieuexeccodedep', 'departement', colnames(selection))
     colRetrait = c('uidcontrat', 'idcontrat', 'typecontrat', 'lieuexectypecode', 
                    'lieuexeccode', 'datepublicationdonnees', 'idacheteur', 'idtitulaire')
-    selection_sauvegarde = selection
-    uidContrat <<- paste(paste0("'", unique(selection$uidcontrat), '', "'"), collapse = ', ')
+    uidContrat = paste(paste0("'", unique(selection$uidcontrat), '', "'"), collapse = ', ')
     
     selection  = selection[, -which(colnames(selection)%in% colRetrait)]
     
@@ -203,7 +202,8 @@ server = function(input, output, session) {
     requeteGeo = gsub('\n|\t', '', requeteGeo)
     selectionGeo <- dbGetQuery(con, requeteGeo)
 
-    
+    test <<- selectionGeo
+    print(head(test))
     return(list(selection = selection, 
                 selectionGeo = selectionGeo))
   })
@@ -235,16 +235,20 @@ server = function(input, output, session) {
   output$map <- renderLeaflet({
     acheteursUniques = unique(filtrerDonnees()$selectionGeo)
     # print(head(acheteursUniques))
-    leaflet() %>%
+    map = leaflet() %>%
       addTiles() %>%  
-      setView(lng = 4, lat = 47.5,  zoom = 5)   %>%
-    addCircleMarkers( lng = acheteursUniques$long_acheteur, 
-                      lat = acheteursUniques$lat_acheteur, 
-                      popup = acheteursUniques$acheteur,
-                      layerId = acheteursUniques$idacheteur,
-                      group = 'acheteurs',
-                      radius = 4, color = "blue", opacity = 1
-    )
+      setView(lng = 4, lat = 47.5,  zoom = 5)   
+    if (length(acheteursUniques)>0){
+      map = map %>%
+        addCircleMarkers( lng = acheteursUniques$long_acheteur, 
+                          lat = acheteursUniques$lat_acheteur, 
+                          popup = acheteursUniques$acheteur,
+                          layerId = acheteursUniques$idacheteur,
+                          group = 'acheteurs',
+                          radius = 4, color = "blue", opacity = 1
+        )
+    }
+    return(map)
     
   })
   
