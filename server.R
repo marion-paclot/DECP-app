@@ -103,8 +103,8 @@ server = function(input, output, session) {
                OR (dateNotification is {dateAbs*} OR dateSignature is {dateAbs*}))
             AND dureemois >= {dureeMin*}
             AND dureemois <= {dureeMax*}
-
-         LIMIT 1000 ;",
+         LIMIT 1200
+         ;",
             idAcheteurs = var_idacheteur,
             idTitulaires = var_idtitulaire,
             typecontrat = var_marche,
@@ -133,7 +133,7 @@ server = function(input, output, session) {
       selection <- dbGetQuery(con, requete)
 
       selection = set_utf8(selection)
-      
+
       # Faire plus propre à un autre moment
       if (nrow(selection) == 0){
          return(data.frame("Vide" = "Pas de marchés correspondant à ces critères"))
@@ -164,23 +164,24 @@ server = function(input, output, session) {
       titulaireParMarche = resultatsT %>%
          group_by(uidcontrat) %>%
          mutate(titulaire = paste0(codelabeltitulaire, collapse = "<br>"))
+      titulaireParMarche = unique(titulaireParMarche)
 
-   selection = merge(acheteurParMarche, selection, by = "uidcontrat", all = TRUE)
-   selection = merge(titulaireParMarche[, c('uidcontrat', 'titulaire')], 
-                     selection, by = "uidcontrat", all = TRUE)
-   
-    #Allègement de la table
-    selection$lieuexecnom = paste(selection$lieuexecnom, selection$lieuexeccode, 
+      selection = merge(acheteurParMarche, selection, by = "uidcontrat", all = TRUE)
+      selection = merge(titulaireParMarche[, c('uidcontrat', 'titulaire')], 
+                        selection, by = "uidcontrat", all = TRUE)
+      selection <<- selection
+
+      #Allègement de la table
+      selection$lieuexecnom = paste(selection$lieuexecnom, selection$lieuexeccode, 
                                    sep = "<br>")
-    colnames(selection) = gsub('lieuexeccodedep', 'departement', colnames(selection))
-    colRetrait = c('uidcontrat', 'idcontrat', 'typecontrat', 'lieuexectypecode', 
+      colnames(selection) = gsub('lieuexeccodedep', 'departement', colnames(selection))
+      colRetrait = c('uidcontrat', 'idcontrat', 'typecontrat', 'lieuexectypecode', 
                    'lieuexeccode', 'datepublicationdonnees', 'idacheteur', 'idtitulaire')
-    selection  = selection[, -which(colnames(selection)%in% colRetrait)]
-    
-    
-    # Requête géographique
-    
-    requeteGeo = glue_sql("SELECT acheteurs.*, titulaires.*,
+      selection  = selection[, -which(colnames(selection)%in% colRetrait)]
+      
+      # Requête géographique
+      
+      requeteGeo = glue_sql("SELECT acheteurs.*, titulaires.*,
         s1.longitude as long_acheteur, s1.latitude as lat_acheteur,
         s2.longitude as long_titulaire, s2.latitude as lat_titulaire
         FROM acheteurs
@@ -193,9 +194,9 @@ server = function(input, output, session) {
         WHERE acheteurs.uidcontrat IN ({uidcontrat*});",
          uidcontrat = listeuidContrat,
          .con = con)
-    selectionGeo <- dbGetQuery(con, requeteGeo)
-   
-    return(list(selection = selection,
+      selectionGeo <- dbGetQuery(con, requeteGeo)
+      
+      return(list(selection = selection,
                 selectionGeo = selectionGeo
                 ))
    })
@@ -206,22 +207,30 @@ server = function(input, output, session) {
    ############ FILTRAGE
    
    ## Tables de sortie
-   output$donnees <- DT::renderDataTable(
-    filtrerDonnees()$selection,
-    options = list(scrollX = TRUE, "pageLength" = 10, autoWidth = TRUE,
-                   language = list(url = 'French.json'),
-                   columnDefs = list(
-                     list(targets=c(0), visible = FALSE),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'objet')), visible=TRUE, width='350'),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'acheteur')), visible=TRUE, width='250'),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'titulaire')), visible=TRUE, width='250'),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'lieuexecnom')), visible=TRUE, width='100'),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'nomcpv')), visible=TRUE, width='200'),
-                     list(targets=c(which(colnames(filtrerDonnees()) == 'procedure')), visible=TRUE, width='150')
-                   )
-                   ),
-    escape = FALSE
-   )
+  
+   output$donnees <- DT::renderDataTable({
+      
+      datatable(head(unique(filtrerDonnees()$selection),1000),
+                colnames = c('Titulaire', 'Acheteur', 'Nature du contrat', 'Objet du contrat',
+                'Code activité CPV','Nom activité', 'Type de procédure', 
+                "Lieu d'exécution", "Département", "Durée du contrat", "Date de signature", 
+                "Montant", "Forme de prix"),
+                options = list(scrollX = TRUE, "pageLength" = 10, autoWidth = TRUE,
+                               language = list(url = 'French.json'),
+                               columnDefs = list(
+                                  list(targets=c(0), visible = FALSE),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'nature')), visible=TRUE, width='100'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'formeprix')), visible=TRUE, width='150'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'objet')), visible=TRUE, width='350'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'acheteur')), visible=TRUE, width='200'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'titulaire')), visible=TRUE, width='250'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'lieuexecnom')), visible=TRUE, width='100'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'nomcpv')), visible=TRUE, width='200'),
+                                  list(targets=c(which(colnames(filtrerDonnees()$selection) == 'procedure')), visible=TRUE, width='150')
+                               )
+                ),
+                escape = FALSE)
+      })
    
    # Carte
    output$map <- renderLeaflet({
@@ -285,7 +294,12 @@ server = function(input, output, session) {
   output$downloadData <- downloadHandler(
     filename = 'Donnees_DECP.xlsx',
     content = function(file) {
-      write_xlsx(filtrerDonnees()$selection, file)
+      write_xlsx(filtrerDonnees()$selection, 
+                 # col_names = c('Titulaire', 'Acheteur', 'Nature du contrat', 'Objet du contrat',
+                 #             'Code activité CPV','Nom activité', 'Type de procédure', 
+                 #             "Lieu d'exécution", "Département", "Durée du contrat", "Date de signature", 
+                 #             "Montant", "Forme de prix"), 
+                 file)
     }
   )
 
